@@ -14,15 +14,6 @@ interface Message {
   }
 }
 
-interface StreamResponse {
-  type: string
-  index: number
-  delta: {
-    text: string
-  }
-  stopReason: string | null
-}
-
 const AVAILABLE_MODELS = [
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
   { id: 'gpt-4.1', name: 'GPT-4.1' },
