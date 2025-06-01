@@ -1,0 +1,235 @@
+basePath: /v1
+definitions:
+  main.AnthropicMessage:
+    description: A message in the chat conversation
+    properties:
+      content:
+        description: |-
+          The content of the message
+          @Example Hello, how can you help me today?
+        example: Hello, how can you help me today?
+        type: string
+      role:
+        description: |-
+          The role of the message author (e.g., "user" or "assistant")
+          @Example user
+        example: user
+        type: string
+    type: object
+  main.AnthropicRequest:
+    description: Request format for the chat API
+    properties:
+      max_tokens:
+        description: |-
+          The maximum number of tokens to generate
+          @Example 1000
+        example: 1000
+        type: integer
+      messages:
+        description: The messages to generate completions for
+        items:
+          $ref: '#/definitions/main.AnthropicMessage'
+        type: array
+      model:
+        description: |-
+          The model to use for completion
+          @Example gpt-4o-mini
+        example: gpt-4o-mini
+        type: string
+      stream:
+        description: |-
+          Whether to stream the response
+          @Example false
+        example: false
+        type: boolean
+    type: object
+  main.AnthropicResponse:
+    description: Response format for the chat API
+    properties:
+      content:
+        description: |-
+          The generated content
+          @Example I can help you with various tasks. What would you like to know?
+        example: I can help you with various tasks. What would you like to know?
+        type: string
+      id:
+        description: |-
+          The unique identifier for this completion
+          @Example msg_1234567890
+        example: msg_1234567890
+        type: string
+      model:
+        description: |-
+          The model used for completion
+          @Example gpt-4o-mini
+        example: gpt-4o-mini
+        type: string
+      role:
+        description: |-
+          The role of the message author
+          @Example assistant
+        example: assistant
+        type: string
+      stop_reason:
+        description: |-
+          The reason why the completion stopped
+          @Example stop
+        example: stop
+        type: string
+      type:
+        description: |-
+          The type of the response
+          @Example message
+        example: message
+        type: string
+    type: object
+  main.AnthropicStreamResponse:
+    description: Streaming response format for the chat API
+    properties:
+      delta:
+        allOf:
+        - $ref: '#/definitions/main.Delta'
+        description: The delta content
+      index:
+        description: |-
+          The index of the content block
+          @Example 0
+        example: 0
+        type: integer
+      stop_reason:
+        description: |-
+          The reason why the stream stopped (if applicable)
+          @Example stop
+        example: stop
+        type: string
+      type:
+        description: |-
+          The type of the stream event
+          @Example content_block_delta
+        example: content_block_delta
+        type: string
+    type: object
+  main.ComponentHealth:
+    description: Health status of a service component
+    properties:
+      details:
+        description: |-
+          Optional details about the component's health
+          @Example Connection timeout
+        example: Connection timeout
+        type: string
+      status:
+        description: |-
+          Status of the component
+          @Example healthy
+        example: healthy
+        type: string
+    type: object
+  main.Delta:
+    description: Incremental content in a streaming response
+    properties:
+      text:
+        description: |-
+          The content text
+          @Example Hello
+        example: Hello
+        type: string
+    type: object
+  main.ErrorResponse:
+    description: Error response format
+    properties:
+      code:
+        description: |-
+          The error code
+          @Example 400
+        example: 400
+        type: integer
+      message:
+        description: |-
+          The error message
+          @Example Invalid request body
+        example: Invalid request body
+        type: string
+    type: object
+  main.HealthResponse:
+    description: Health check response format
+    properties:
+      components:
+        additionalProperties:
+          $ref: '#/definitions/main.ComponentHealth'
+        description: Status of individual components
+        type: object
+      status:
+        description: |-
+          Overall status of the service
+          @Example healthy
+        example: healthy
+        type: string
+      time:
+        description: |-
+          Timestamp of the health check
+          @Example 2024-03-20T15:04:05Z
+        example: "2024-03-20T15:04:05Z"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: A gateway service that converts between Anthropic and OpenAI API formats
+  title: LLM Gateway API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Check the health of the service and its dependencies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Health check endpoint
+      tags:
+      - health
+  /messages:
+    post:
+      consumes:
+      - application/json
+      description: Process chat messages through the LLM gateway
+      parameters:
+      - description: Chat request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.AnthropicRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: When stream=true
+          schema:
+            $ref: '#/definitions/main.AnthropicStreamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Send messages to LLM
+      tags:
+      - messages
+schemes:
+- http
+swagger: "2.0"

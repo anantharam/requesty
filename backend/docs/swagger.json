@@ -1,0 +1,271 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "A gateway service that converts between Anthropic and OpenAI API formats",
+        "title": "LLM Gateway API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/v1",
+    "paths": {
+        "/health": {
+            "get": {
+                "description": "Check the health of the service and its dependencies",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.HealthResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/messages": {
+            "post": {
+                "description": "Process chat messages through the LLM gateway",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Send messages to LLM",
+                "parameters": [
+                    {
+                        "description": "Chat request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.AnthropicRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "When stream=true",
+                        "schema": {
+                            "$ref": "#/definitions/main.AnthropicStreamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "main.AnthropicMessage": {
+            "description": "A message in the chat conversation",
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "The content of the message\n@Example Hello, how can you help me today?",
+                    "type": "string",
+                    "example": "Hello, how can you help me today?"
+                },
+                "role": {
+                    "description": "The role of the message author (e.g., \"user\" or \"assistant\")\n@Example user",
+                    "type": "string",
+                    "example": "user"
+                }
+            }
+        },
+        "main.AnthropicRequest": {
+            "description": "Request format for the chat API",
+            "type": "object",
+            "properties": {
+                "max_tokens": {
+                    "description": "The maximum number of tokens to generate\n@Example 1000",
+                    "type": "integer",
+                    "example": 1000
+                },
+                "messages": {
+                    "description": "The messages to generate completions for",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.AnthropicMessage"
+                    }
+                },
+                "model": {
+                    "description": "The model to use for completion\n@Example gpt-4o-mini",
+                    "type": "string",
+                    "example": "gpt-4o-mini"
+                },
+                "stream": {
+                    "description": "Whether to stream the response\n@Example false",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "main.AnthropicResponse": {
+            "description": "Response format for the chat API",
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "The generated content\n@Example I can help you with various tasks. What would you like to know?",
+                    "type": "string",
+                    "example": "I can help you with various tasks. What would you like to know?"
+                },
+                "id": {
+                    "description": "The unique identifier for this completion\n@Example msg_1234567890",
+                    "type": "string",
+                    "example": "msg_1234567890"
+                },
+                "model": {
+                    "description": "The model used for completion\n@Example gpt-4o-mini",
+                    "type": "string",
+                    "example": "gpt-4o-mini"
+                },
+                "role": {
+                    "description": "The role of the message author\n@Example assistant",
+                    "type": "string",
+                    "example": "assistant"
+                },
+                "stop_reason": {
+                    "description": "The reason why the completion stopped\n@Example stop",
+                    "type": "string",
+                    "example": "stop"
+                },
+                "type": {
+                    "description": "The type of the response\n@Example message",
+                    "type": "string",
+                    "example": "message"
+                }
+            }
+        },
+        "main.AnthropicStreamResponse": {
+            "description": "Streaming response format for the chat API",
+            "type": "object",
+            "properties": {
+                "delta": {
+                    "description": "The delta content",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/main.Delta"
+                        }
+                    ]
+                },
+                "index": {
+                    "description": "The index of the content block\n@Example 0",
+                    "type": "integer",
+                    "example": 0
+                },
+                "stop_reason": {
+                    "description": "The reason why the stream stopped (if applicable)\n@Example stop",
+                    "type": "string",
+                    "example": "stop"
+                },
+                "type": {
+                    "description": "The type of the stream event\n@Example content_block_delta",
+                    "type": "string",
+                    "example": "content_block_delta"
+                }
+            }
+        },
+        "main.ComponentHealth": {
+            "description": "Health status of a service component",
+            "type": "object",
+            "properties": {
+                "details": {
+                    "description": "Optional details about the component's health\n@Example Connection timeout",
+                    "type": "string",
+                    "example": "Connection timeout"
+                },
+                "status": {
+                    "description": "Status of the component\n@Example healthy",
+                    "type": "string",
+                    "example": "healthy"
+                }
+            }
+        },
+        "main.Delta": {
+            "description": "Incremental content in a streaming response",
+            "type": "object",
+            "properties": {
+                "text": {
+                    "description": "The content text\n@Example Hello",
+                    "type": "string",
+                    "example": "Hello"
+                }
+            }
+        },
+        "main.ErrorResponse": {
+            "description": "Error response format",
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "The error code\n@Example 400",
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
+                    "description": "The error message\n@Example Invalid request body",
+                    "type": "string",
+                    "example": "Invalid request body"
+                }
+            }
+        },
+        "main.HealthResponse": {
+            "description": "Health check response format",
+            "type": "object",
+            "properties": {
+                "components": {
+                    "description": "Status of individual components",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/main.ComponentHealth"
+                    }
+                },
+                "status": {
+                    "description": "Overall status of the service\n@Example healthy",
+                    "type": "string",
+                    "example": "healthy"
+                },
+                "time": {
+                    "description": "Timestamp of the health check\n@Example 2024-03-20T15:04:05Z",
+                    "type": "string",
+                    "example": "2024-03-20T15:04:05Z"
+                }
+            }
+        }
+    }
+}

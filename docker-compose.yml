@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=my-super-secret-admin-token
+      - API_KEY=sk-eyyhb/fzS1qMAhH15w/AaZPO/XZjAeAC3QVtP6VyE5eGpXlf2Q39LHOqkJ1YLpzK6HZ0MCo9ULMt8dQ5BzaGpupDNSDWmvvomsMVCEnlTQU=
+      - PORT=8080
+      - OPENAI_API_URL=https://router.requesty.ai/v1/chat/completions
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  influxdb:
+    build:
+      context: ./influxdb
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  influxdb-data: 
